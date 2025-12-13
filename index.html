@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigiMoms - Income Report</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { max-width: 500px; width: 100%; }
+        .logo { text-align: center; margin-bottom: 20px; font-size: 28px; font-weight: 700; color: #007bff; }
+        .search-panel { background-color: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); }
+        .search-panel h1 { font-size: 22px; text-align: center; color: #333; margin-top: 0; margin-bottom: 25px; }
+        .search-box { display: flex; gap: 10px; }
+        #workerIdInput { flex-grow: 1; padding: 14px; font-size: 16px; border: 1px solid #ddd; border-radius: 8px; }
+        #searchBtn { padding: 14px 20px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .result-panel { background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); margin-top: 25px; display: none; }
+        .result-header { text-align: center; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
+        .result-header h2 { margin: 0; font-size: 24px; color: #007bff; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center; }
+        .info-box { background-color: #f8f9fa; padding: 20px; border-radius: 12px; }
+        .info-box p { margin: 0 0 5px 0; color: #555; font-size: 14px; }
+        .info-box .amount { font-size: 24px; font-weight: 600; color: #333; }
+        .info-box .amount.pending { color: #dc3545; }
+        .info-box .amount.lifetime { color: #28a745; }
+
+        #loading { text-align: center; margin-top: 20px; font-weight: 500; }
+        #error { background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="logo">DigiMoms</div>
+        <div class="search-panel">
+            <h1>Partner Income Report</h1>
+            <div class="search-box">
+                <input type="text" id="workerIdInput" placeholder="Enter Your Mobile Number">
+                <button id="searchBtn">View Report</button>
+            </div>
+        </div>
+
+        <div id="loading" style="display: none;">Fetching your report...</div>
+        <div id="error"></div>
+        
+        <div id="result" class="result-panel">
+            <div class="result-header">
+                <h2 id="workerName"></h2>
+            </div>
+            <div class="info-grid">
+                <div class="info-box">
+                    <p>Pending Payout</p>
+                    <p class="amount pending" id="pendingPayout"></p>
+                </div>
+                <div class="info-box">
+                    <p>Lifetime Earnings</p>
+                    <p class="amount lifetime" id="lifetimeEarnings"></p>
+                </div>
+                <div class="info-box">
+                    <p>Affiliate Income</p>
+                    <p class="amount" id="affiliateIncome"></p>
+                </div>
+                <div class="info-box">
+                    <p>Seminar Income</p>
+                    <p class="amount" id="seminarIncome"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const searchBtn = document.getElementById('searchBtn');
+        const workerIdInput = document.getElementById('workerIdInput');
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        
+        // --- PRE-CONFIGURED URL and TOKEN ---
+        const API_URL = 'http://localhost/digitalmarket/api.php';
+        const API_TOKEN = 'DFGHJKLQWERTYUIIOPOKJHGFDXCVBNM';
+
+        searchBtn.addEventListener('click', fetchIncomeData);
+        workerIdInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') fetchIncome-data(); });
+
+        async function fetchIncomeData() {
+            const workerId = workerIdInput.value.trim();
+            if (!workerId) { showError('Please enter a Mobile Number.'); return; }
+
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_URL}?worker_id=${workerId}`, {
+                    headers: { 'X-API-TOKEN': API_TOKEN }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    displayData(data);
+                } else {
+                    showError(data.message);
+                }
+            } catch (err) {
+                showError('An error occurred. Please ensure the MAIN website is running.');
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function displayData(data) {
+            document.getElementById('workerName').textContent = data.full_name;
+            document.getElementById('pendingPayout').textContent = `₹${parseFloat(data.pending_payout).toFixed(2)}`;
+            document.getElementById('lifetimeEarnings').textContent = `₹${parseFloat(data.lifetime_earnings).toFixed(2)}`;
+            document.getElementById('affiliateIncome').textContent = `₹${parseFloat(data.affiliate_income).toFixed(2)}`;
+            document.getElementById('seminarIncome').textContent = `₹${parseFloat(data.seminar_income).toFixed(2)}`;
+            resultDiv.style.display = 'block';
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>
